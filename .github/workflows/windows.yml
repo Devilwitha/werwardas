@@ -1,0 +1,55 @@
+name: Windows-App bauen
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Version aus Tag setzen
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $v = "${{ github.ref_name }}".TrimStart("v")
+          } else {
+            $v = "0.1.0"
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Exe bauen (eine Datei, ohne .NET-Installation lauffähig)
+        run: >
+          dotnet publish windows/WerWarDas/WerWarDas.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=none
+          -p:Version=${{ steps.version.outputs.version }}
+          -o out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WerWarDas-windows
+          path: out/WerWarDas.exe
+
+      - name: Release erstellen
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/WerWarDas.exe
+          generate_release_notes: true

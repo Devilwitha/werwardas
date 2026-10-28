@@ -1,0 +1,27 @@
+# Beispiel-Karte für das Home-Assistant-Dashboard.
+# Dashboard bearbeiten -> Karte hinzufügen -> "Manuell" -> diesen Text einfügen.
+# Die Entitäts-IDs ggf. an deine anpassen (Einstellungen -> Geräte -> WerWarDas Kamera).
+type: vertical-stack
+cards:
+  - type: picture-entity
+    entity: camera.werwardas_kamera_zimmer
+    show_state: false
+    show_name: false
+  - type: entities
+    title: Aufräum-Wächter
+    entities:
+      - entity: sensor.werwardas_kamera_ordnung
+      - entity: binary_sensor.werwardas_kamera_unordentlich
+      - entity: sensor.werwardas_kamera_begrundung
+      - entity: sensor.werwardas_kamera_letzte_prufung
+      - entity: switch.werwardas_kamera_uberwachung
+      - entity: button.werwardas_kamera_jetzt_prufen
+      - entity: button.werwardas_kamera_als_aufgeraumt_speichern
+  - type: gauge
+    entity: sensor.werwardas_kamera_ordnung
+    min: 0
+    max: 100
+    severity:
+      green: 70
+      yellow: 50
+      red: 0
