@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Windows;
 
 namespace WerWarDas;
@@ -5,10 +8,24 @@ namespace WerWarDas;
 public partial class SettingsWindow : Window
 {
     private readonly Settings _settings;
+    private readonly CamSettings? _cam;
 
-    public SettingsWindow(Settings settings)
+    /// <param name="cam">Aktuelle Einstellungen des Kameradienstes; null = nicht erreichbar.</param>
+    public SettingsWindow(Settings settings, CamSettings? cam = null)
     {
         InitializeComponent();
+        _cam = cam;
+        if (cam != null)
+        {
+            IntervalBox.Text = cam.Interval.ToString();
+            ThresholdBox.Text = cam.Threshold.ToString();
+            ActiveHoursBox.Text = cam.ActiveHours ?? "";
+        }
+        else
+        {
+            IntervalBox.IsEnabled = ThresholdBox.IsEnabled = ActiveHoursBox.IsEnabled = false;
+            CamHint.Visibility = Visibility.Visible;
+        }
         _settings = settings.Clone();
         HostBox.Text = _settings.BrokerHost;
         PortBox.Text = _settings.BrokerPort.ToString();
@@ -25,6 +42,26 @@ public partial class SettingsWindow : Window
 
     /// <summary>Die gespeicherten Einstellungen, wenn der Benutzer auf "Speichern" geklickt hat.</summary>
     public Settings? Result { get; private set; }
+
+    /// <summary>Geänderte Einstellungen des Kameradienstes (MQTT-Schlüssel -> Wert).</summary>
+    public Dictionary<string, string> CamChanges { get; } = new();
+
+    /// <summary>"8:00 - 22:00" -> "08:00-22:00", leer -> "". null = ungültig.</summary>
+    private static string? NormalizeActiveHours(string text)
+    {
+        text = text.Trim();
+        if (text.Length == 0) return "";
+        var parts = text.Split('-');
+        if (parts.Length != 2) return null;
+        var times = new List<string>();
+        foreach (var part in parts)
+        {
+            if (!TimeSpan.TryParseExact(part.Trim(), new[] { @"h\:mm", @"hh\:mm" }, CultureInfo.InvariantCulture, out var t))
+                return null;
+            times.Add(t.ToString(@"hh\:mm"));
+        }
+        return $"{times[0]}-{times[1]}";
+    }
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
@@ -43,6 +80,29 @@ public partial class SettingsWindow : Window
         {
             ErrorText.Text = "Bitte bei den Minuten nur ganze Zahlen ab 0 eingeben.";
             return;
+        }
+
+        if (_cam != null)
+        {
+            if (!int.TryParse(IntervalBox.Text, out var interval) || interval is < 1 or > 240)
+            {
+                ErrorText.Text = "Prüfintervall: bitte eine ganze Zahl von 1 bis 240 Minuten eingeben.";
+                return;
+            }
+            if (!int.TryParse(ThresholdBox.Text, out var threshold) || threshold is < 0 or > 100)
+            {
+                ErrorText.Text = "Aufgeräumt ab: bitte einen Wert von 0 bis 100 % eingeben.";
+                return;
+            }
+            var hours = NormalizeActiveHours(ActiveHoursBox.Text);
+            if (hours == null)
+            {
+                ErrorText.Text = "Prüfzeit: bitte in der Form 08:00-22:00 eingeben (oder leer lassen).";
+                return;
+            }
+            if (interval != _cam.Interval) CamChanges["interval"] = interval.ToString();
+            if (threshold != _cam.Threshold) CamChanges["threshold"] = threshold.ToString();
+            if (hours != (_cam.ActiveHours ?? "")) CamChanges["active_hours"] = hours;
         }
 
         _settings.BrokerHost = HostBox.Text.Trim();

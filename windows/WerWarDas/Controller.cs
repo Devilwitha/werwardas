@@ -34,6 +34,7 @@ public sealed class Controller
     private DateTimeOffset _emergencyUntil = DateTimeOffset.MinValue;
     private DateTimeOffset _disconnectedSince = DateTimeOffset.Now;
     private bool _camOnline;
+    private bool _noticeIsAutomatic;
     private bool _shutdownStarted;
     private bool _checkPending;
 
@@ -160,7 +161,8 @@ public sealed class Controller
     private void Evaluate(bool newState = false)
     {
         var now = DateTimeOffset.Now;
-        var offline = !_mqtt.IsConnected || !_camOnline;
+        // Die Kamera zählt nur im Automatik-Modus; im HA-Modus entscheidet Home Assistant.
+        var offline = !_mqtt.IsConnected || (_settings.Mode == ControlMode.Automatic && !_camOnline);
 
         if (State == PcState.EmergencyUnlocked)
         {
@@ -173,7 +175,8 @@ public sealed class Controller
         // Ausfallsicher: keine Verbindung -> PC freigeben
         if (offline && now - _disconnectedSince > TimeSpan.FromMinutes(_settings.FailOpenMinutes))
         {
-            if (State is PcState.Locked or PcState.Warned)
+            // Von Hand geöffnete Hinweise (Tray, HA-Button) schränken nichts ein und bleiben offen.
+            if (State == PcState.Locked || (State == PcState.Warned && _noticeIsAutomatic))
             {
                 Log.Write("Keine Verbindung zu Broker/Kamera – PC wird freigegeben");
                 Unlock(thanks: false);
@@ -197,7 +200,7 @@ public sealed class Controller
                 }
                 else if (!graceOver && (State == PcState.Free || newState))
                 {
-                    ShowNotice();
+                    ShowNotice(automatic: true);
                 }
                 else if (State == PcState.Locked && newState)
                 {
@@ -225,9 +228,10 @@ public sealed class Controller
 
     // ------------------------------------------------------------ Aktionen
 
-    public void ShowNotice()
+    public void ShowNotice(bool automatic = false)
     {
         if (State == PcState.Locked) return;
+        _noticeIsAutomatic = automatic;
         SetState(PcState.Warned);
         if (_notice == null)
         {

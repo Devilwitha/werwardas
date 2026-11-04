@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
@@ -68,9 +69,16 @@ public partial class App : Application
     {
         if (_controller?.State == PcState.Locked) return;
         if (!PinDialog.Ask(Settings, "die Einstellungen zu öffnen")) return;
-        var dlg = new SettingsWindow(Settings);
+        var mqtt = _mqtt;
+        var dlg = new SettingsWindow(Settings, mqtt?.IsConnected == true ? mqtt.CamSettings : null);
         if (dlg.ShowDialog() == true && dlg.Result != null)
         {
+            // Kamera-Einstellungen noch über die bestehende Verbindung senden, bevor sie neu aufgebaut wird.
+            foreach (var (key, value) in dlg.CamChanges)
+            {
+                Log.Write($"Kamera-Einstellung {key} = {value}");
+                if (mqtt != null) Task.Run(() => mqtt.SetCamSetting(key, value)).Wait(2000);
+            }
             Settings = dlg.Result;
             StopServices();
             StartServices();

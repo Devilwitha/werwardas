@@ -59,7 +59,7 @@ DEFAULTS: dict = {
 }
 
 # Diese Werte können aus Home Assistant geändert werden und überleben einen Neustart.
-RUNTIME_KEYS = ("interval_minutes", "threshold", "active", "analyzer")
+RUNTIME_KEYS = ("interval_minutes", "threshold", "active", "analyzer", "active_hours")
 
 
 def _merge(base: dict, override: dict) -> dict:

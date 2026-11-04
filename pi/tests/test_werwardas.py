@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 
 from werwardas.analyzers.reference import ReferenceAnalyzer
 from werwardas.config import Config
-from werwardas.service import Service, in_active_hours
+from werwardas.service import Service, in_active_hours, normalize_active_hours
 
 
 def room(clutter: int = 0, brightness: float = 1.0, seed: int = 1) -> Image.Image:
@@ -152,3 +152,31 @@ def test_ollama_parses_json():
         result = OllamaAnalyzer({"url": "http://x:11434", "model": "m", "timeout_seconds": 5}, "").analyze(room())
     assert (result.score, result.reason) == (42, "Kleidung auf dem Boden.")
     assert post.call_args.kwargs["json"]["messages"][0]["images"]
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [(" 8:00 - 22:00 ", "08:00-22:00"), ("20:00-02:00", "20:00-02:00"), ("", ""), ("immer", "")],
+)
+def test_normalize_active_hours(raw, expected):
+    assert normalize_active_hours(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["8-22", "25:00-22:00", "abends"])
+def test_normalize_active_hours_invalid(raw):
+    with pytest.raises(ValueError):
+        normalize_active_hours(raw)
+
+
+def test_set_active_hours_via_mqtt(cfg_file):
+    cfg = Config(cfg_file)
+    service = Service(cfg)
+    service.client = mock.MagicMock()
+    msg = mock.Mock(topic="werwardas/cam/set/active_hours", payload=b"9:00-21:30")
+    service._on_message(service.client, None, msg)
+    assert Config(cfg_file)["active_hours"] == "09:00-21:30"
+    assert published(service.client, "werwardas/cam/settings")[-1]["active_hours"] == "09:00-21:30"
+
+    # ungültige Eingabe ändert nichts
+    service._on_message(service.client, None, mock.Mock(topic=msg.topic, payload=b"quatsch"))
+    assert Config(cfg_file)["active_hours"] == "09:00-21:30"

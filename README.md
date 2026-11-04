@@ -20,6 +20,7 @@ Alles ist in **Home Assistant** eingebunden.
 | [`pi/`](pi) | Kamera-Software für den Raspberry Pi (Python) inklusive Installationsskript |
 | [`windows/`](windows) | Windows-App (C# / .NET 8). Die `.exe` baut GitHub Actions automatisch |
 | [`homeassistant/`](homeassistant) | Blueprint (optional) und Beispiel-Karte fürs Dashboard |
+| [`esp32cam/`](esp32cam) | Firmware für eine ESP32-CAM als günstige WLAN-Kamera (PlatformIO) |
 
 ---
 
@@ -63,7 +64,7 @@ Kurz danach erscheint in Home Assistant automatisch das Gerät **„WerWarDas Ka
 | Jetzt prüfen | sofort ein Foto machen und bewerten |
 | Als aufgeräumt speichern | aktuelles Foto als Referenz für den Offline-Vergleich |
 | Überwachung | Schalter zum Pausieren (z. B. im Urlaub) |
-| Grenzwert / Intervall / Bewertung | Einstellungen, direkt in HA änderbar |
+| Grenzwert / Intervall / Prüfzeit / Bewertung | Einstellungen, direkt in HA änderbar (Prüfzeit z. B. `08:00-22:00`, leer = immer) |
 
 Nützliche Befehle auf dem Pi:
 
@@ -75,6 +76,37 @@ werwardas --once                        # einmal Foto + Bewertung ausgeben (Dien
 curl -fsSL .../install.sh | sudo bash -s -- --reconfigure   # Einrichtung neu
 curl -fsSL .../install.sh | sudo bash -s -- --uninstall     # entfernen
 ```
+
+## 3b. Ohne Pi: ESP32-CAM + Kameradienst auf dem Windows-PC
+
+Statt Pi + Kamera geht auch eine **ESP32-CAM (AI-Thinker)** als WLAN-Kamera. Die Bewertung läuft dann auf dem Windows-PC.
+
+**Firmware flashen** (ESP32-CAM-MB per USB, [PlatformIO](https://platformio.org) nötig: `pip install platformio`):
+
+```powershell
+cd esp32cam
+copy include\secrets.example.h include\secrets.h   # WLAN-Name/Passwort eintragen (nur 2,4 GHz)
+pio run -t upload --upload-port COM41               # COM-Port im Geräte-Manager nachsehen
+pio run -e ota -t upload --upload-port werwardas-cam.local   # spätere Updates per WLAN
+```
+
+Danach liefert `http://werwardas-cam.local/capture` ein Foto (Statusseite: `http://werwardas-cam.local/`).
+
+**Kameradienst installieren** (Python 3.10+ nötig, keine Admin-Rechte):
+
+```powershell
+.\pi\install-windows.ps1 -MqttHost <IP-von-HA> -MqttUser werwardas -MqttPassword <passwort> `
+    -CameraUrl http://werwardas-cam.local/capture -Analyzer ollama
+```
+
+Das Skript installiert nach `%LOCALAPPDATA%\WerWarDas\kamera`, macht ein Testfoto und richtet die geplante Aufgabe
+„WerWarDas Kamera“ ein (startet bei der Anmeldung). Danach erscheint in HA dasselbe Gerät **„WerWarDas Kamera“** wie beim Pi.
+Liegt das Bild schief: `camera.rotation` in der `config.yaml` setzen. **Update:** Skript ohne Parameter erneut ausführen,
+**Entfernen:** `-Uninstall`.
+
+> Läuft der Dienst auf dem überwachten PC selbst, kann man ihn beenden. Die Windows-App gibt den PC dann nach
+> 2 Minuten frei. Wer das nicht will, betreibt denselben Dienst später auf einem Pi (Abschnitt 3) und trägt dort
+> `camera.url` der ESP32-CAM und `ollama.url: http://<IP-des-PCs>:11434` ein.
 
 ## 4. Bewertung: drei Möglichkeiten
 
@@ -115,6 +147,8 @@ Mit `prompt_hint` in der `config.yaml` kannst du der KI Hinweise geben, z. B.
 2. Die exe an einen festen Ort legen (z. B. `C:\Programme\WerWarDas\`) und starten. Es ist keine Installation nötig.
    Windows SmartScreen warnt eventuell, weil die exe nicht signiert ist: *Weitere Informationen → Trotzdem ausführen*.
 3. Beim ersten Start öffnen sich die Einstellungen: Adresse von Home Assistant, Benutzer `werwardas` und Passwort.
+
+In den Einstellungen der App lassen sich unter *Kamera-Prüfung* auch das **Prüfintervall**, der **Grenzwert** (ab wie viel % Ordnung das Zimmer als aufgeräumt gilt) und die **Prüfzeit** des Kameradienstes ändern. Das sind dieselben Werte wie in HA.
 
 Die App läuft danach im Infobereich (🟢 alles ok, 🟡 Hinweis, 🔴 gesperrt, ⚪ keine Verbindung) und startet mit Windows.
 

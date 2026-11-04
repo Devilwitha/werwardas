@@ -3,6 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Win32;
 
 namespace WerWarDas;
@@ -72,6 +73,7 @@ public sealed class Settings
     public Settings Clone() => JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(this))!;
 
     /// <summary>Eindeutiger, MQTT-tauglicher Name des PCs (z. B. "gaming_pc").</summary>
+    [JsonIgnore]
     public string PcId
     {
         get
@@ -85,6 +87,7 @@ public sealed class Settings
         }
     }
 
+    [JsonIgnore]
     public string BrokerPassword
     {
         get
@@ -110,6 +113,7 @@ public sealed class Settings
         }
     }
 
+    [JsonIgnore]
     public bool HasPin => !string.IsNullOrEmpty(PinHash);
 
     public void SetPin(string pin) => PinHash = string.IsNullOrEmpty(pin) ? "" : HashPin(pin);

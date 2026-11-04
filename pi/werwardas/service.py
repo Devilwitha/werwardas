@@ -26,6 +26,20 @@ def now_iso() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
+def normalize_active_hours(spec: str) -> str:
+    """Prüft und vereinheitlicht ein Zeitfenster: ' 8:00 - 22:00 ' -> '08:00-22:00', 'immer'/'' -> ''.
+    Wirft ValueError bei ungültiger Eingabe."""
+    spec = (spec or "").strip()
+    if spec.lower() in ("", "immer", "always"):
+        return ""
+    if "-" not in spec:
+        raise ValueError(f"Zeitfenster braucht die Form HH:MM-HH:MM: {spec!r}")
+    start_s, end_s = (part.strip() for part in spec.split("-", 1))
+    start = datetime.strptime(start_s, "%H:%M")
+    end = datetime.strptime(end_s, "%H:%M")
+    return f"{start:%H:%M}-{end:%H:%M}"
+
+
 def in_active_hours(spec: str, now: datetime | None = None) -> bool:
     """'08:00-22:00' -> True, wenn jetzt in diesem Zeitfenster. Leer = immer aktiv.
     Über Mitternacht (z. B. '20:00-02:00') funktioniert auch."""
@@ -98,6 +112,10 @@ class Service:
                 self.cfg.set_runtime("interval_minutes", max(1, int(float(payload))))
                 self.next_run = time.monotonic() + self.cfg["interval_minutes"] * 60
                 self._publish_settings()
+            elif topic == f"{self.base}/set/active_hours":
+                self.cfg.set_runtime("active_hours", normalize_active_hours(payload))
+                self._publish_settings()
+                self.jobs.put(("check", "settings"))
             elif topic == f"{self.base}/set/analyzer":
                 if payload not in ANALYZERS:
                     raise ValueError(payload)
@@ -118,6 +136,7 @@ class Service:
             "interval": c["interval_minutes"],
             "analyzer": c["analyzer"],
             "active": "ON" if c["active"] else "OFF",
+            "active_hours": c["active_hours"] or "",
             "references": len(self.references.references()),
         }
         self.client.publish(f"{self.base}/settings", json.dumps(settings), retain=True)
@@ -208,6 +227,18 @@ class Service:
                 "command_topic": f"{self.base}/set/interval",
                 "state_topic": settings,
                 "value_template": "{{ value_json.interval }}",
+                "entity_category": "config",
+            },
+            ("text", "active_hours"): {
+                "name": "Prüfzeit",
+                "icon": "mdi:clock-outline",
+                "min": 0,
+                "max": 20,
+                # leer = immer prüfen; über Mitternacht geht auch (z. B. 20:00-02:00)
+                "pattern": r"^(\s*\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}\s*|immer|)$",
+                "command_topic": f"{self.base}/set/active_hours",
+                "state_topic": settings,
+                "value_template": "{{ value_json.active_hours }}",
                 "entity_category": "config",
             },
             ("select", "analyzer"): {

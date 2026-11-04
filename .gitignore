@@ -3,6 +3,7 @@ bin/
 obj/
 *.user
 .vs/
+windows/out/
 
 # Python
 __pycache__/
@@ -10,3 +11,7 @@ __pycache__/
 .pytest_cache/
 venv/
 .venv/
+
+# ESP32-CAM
+esp32cam/.pio/
+esp32cam/include/secrets.h

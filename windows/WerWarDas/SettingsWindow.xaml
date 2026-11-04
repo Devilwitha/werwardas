@@ -84,6 +84,38 @@
             </Grid>
         </GroupBox>
 
+        <GroupBox x:Name="CamGroup" Header="Kamera-Prüfung (gilt für den Kameradienst, auch in HA änderbar)">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                </Grid.RowDefinitions>
+                <TextBlock Style="{StaticResource Label}" Text="Prüfen alle" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBox x:Name="IntervalBox" Width="80" ToolTip="Abstand zwischen zwei automatischen Prüfungen (1–240 Minuten)." />
+                    <TextBlock Text="Minuten (1–240)" VerticalAlignment="Center" Margin="8,0,0,0" />
+                </StackPanel>
+                <TextBlock Style="{StaticResource Label}" Grid.Row="1" Text="Aufgeräumt ab" />
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                    <TextBox x:Name="ThresholdBox" Width="80"
+                             ToolTip="Ab diesem Ordnungs-Score (0–100 %) gilt das Zimmer als aufgeräumt." />
+                    <TextBlock Text="% Ordnung (0–100)" VerticalAlignment="Center" Margin="8,0,0,0" />
+                </StackPanel>
+                <TextBlock Style="{StaticResource Label}" Grid.Row="2" Text="Prüfzeit" />
+                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                    <TextBox x:Name="ActiveHoursBox" Width="120"
+                             ToolTip="Nur in diesem Zeitfenster prüfen, z. B. 08:00-22:00. Leer = immer. Über Mitternacht geht auch (20:00-02:00)." />
+                    <TextBlock Text="z. B. 08:00-22:00, leer = immer" VerticalAlignment="Center" Margin="8,0,0,0" />
+                </StackPanel>
+                <TextBlock x:Name="CamHint" Grid.Row="3" Grid.ColumnSpan="2" Foreground="Gray" TextWrapping="Wrap"
+                           Margin="0,4,0,0" Visibility="Collapsed"
+                           Text="Kameradienst nicht erreichbar – diese Werte können gerade nicht geändert werden." />
+            </Grid>
+        </GroupBox>
+
         <TextBlock x:Name="ErrorText" Foreground="Firebrick" TextWrapping="Wrap" Margin="0,0,0,8" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="Speichern" Padding="18,5" Margin="0,0,8,0" IsDefault="True" Click="Save_Click" />

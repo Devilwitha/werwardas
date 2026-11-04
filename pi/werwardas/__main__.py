@@ -18,12 +18,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--test-camera", metavar="DATEI", help="Ein Foto aufnehmen, speichern und beenden")
     parser.add_argument("--once", action="store_true", help="Einmal Foto + Bewertung ausgeben (ohne MQTT)")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--log-file", metavar="DATEI", help="Log zusätzlich in diese Datei schreiben (rotierend)")
     parser.add_argument("--version", action="version", version=__version__)
     args = parser.parse_args(argv)
 
+    handlers: list[logging.Handler] = []
+    if sys.stderr is not None:  # unter pythonw.exe gibt es keine Konsole
+        handlers.append(logging.StreamHandler())
+    if args.log_file:
+        from logging.handlers import RotatingFileHandler
+
+        handlers.append(RotatingFileHandler(args.log_file, maxBytes=1_000_000, backupCount=3, encoding="utf-8"))
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=handlers or None,
     )
     cfg = Config(args.config)
 

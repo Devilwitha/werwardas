@@ -28,6 +28,14 @@ public sealed class CamState
     public bool IsMessy => Tidy == false && !Error && !Paused;
 }
 
+/// <summary>Einstellungen des Kameradienstes, veröffentlicht auf "werwardas/cam/settings" (retained).</summary>
+public sealed class CamSettings
+{
+    [JsonPropertyName("threshold")] public int Threshold { get; set; }
+    [JsonPropertyName("interval")] public int Interval { get; set; }
+    [JsonPropertyName("active_hours")] public string? ActiveHours { get; set; }
+}
+
 /// <summary>MQTT-Verbindung zu Home Assistant / Mosquitto inkl. automatischer Wiederverbindung.</summary>
 public sealed class MqttService : IDisposable
 {
@@ -41,6 +49,9 @@ public sealed class MqttService : IDisposable
     public event Action<bool>? CamAvailabilityChanged;
     public event Action<string>? CommandReceived;
     public event Action<bool>? ConnectionChanged;
+
+    /// <summary>Zuletzt empfangene Einstellungen des Kameradienstes (null = noch nichts empfangen).</summary>
+    public CamSettings? CamSettings { get; private set; }
 
     public bool IsConnected => _client.IsConnected;
     public string LastError { get; private set; } = "";
@@ -116,6 +127,7 @@ public sealed class MqttService : IDisposable
             .WithTopicFilter($"{CamBase}/state")
             .WithTopicFilter($"{CamBase}/image")
             .WithTopicFilter($"{CamBase}/availability")
+            .WithTopicFilter($"{CamBase}/settings")
             .WithTopicFilter($"{PcBase}/cmd")
             .WithTopicFilter("homeassistant/status")
             .Build();
@@ -142,6 +154,10 @@ public sealed class MqttService : IDisposable
             else if (topic == $"{CamBase}/availability")
             {
                 CamAvailabilityChanged?.Invoke(Encoding.UTF8.GetString(payload) == "online");
+            }
+            else if (topic == $"{CamBase}/settings")
+            {
+                CamSettings = JsonSerializer.Deserialize<CamSettings>(payload);
             }
             else if (topic == $"{PcBase}/cmd")
             {
@@ -179,6 +195,9 @@ public sealed class MqttService : IDisposable
     }
 
     /// <summary>Bittet die Kamera, sofort ein Foto zu machen und zu bewerten.</summary>
+    /// <summary>Eine Einstellung des Kameradienstes ändern (interval, threshold, active_hours).</summary>
+    public Task SetCamSetting(string key, string value) => Publish($"{CamBase}/set/{key}", value);
+
     public Task RequestCheck() => Publish($"{CamBase}/cmd/check", $"pc:{_settings.PcId}");
 
     public Task PublishPcState(string state, bool locked) => Task.WhenAll(
@@ -244,19 +263,25 @@ public sealed class MqttService : IDisposable
 
     public void Dispose()
     {
-        _cts.Cancel();
         try
         {
+            // Erst "offline" senden, dann abbrechen: Publish nutzt _cts.Token und würde sonst sofort scheitern.
+            // (Bei einer sauberen Trennung verschickt der Broker den Last Will nicht.)
             if (_client.IsConnected)
             {
-                Publish($"{PcBase}/availability", "offline", retain: true).Wait(2000);
-                _client.DisconnectAsync().Wait(2000);
+                Task.Run(() => Publish($"{PcBase}/availability", "offline", retain: true)).Wait(2000);
+            }
+            _cts.Cancel();
+            if (_client.IsConnected)
+            {
+                Task.Run(() => _client.DisconnectAsync()).Wait(2000);
             }
         }
         catch (Exception)
         {
             // Beim Beenden egal
         }
+        _cts.Cancel();
         _client.Dispose();
     }
 }
