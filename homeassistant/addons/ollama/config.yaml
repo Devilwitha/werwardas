@@ -9,7 +9,7 @@ arch:
 init: false
 startup: services
 boot: auto
-# Nur im internen Add-on-Netz erreichbar (http://local-ollama:11434). Für Zugriff aus dem LAN hier einen Port eintragen.
+# Nur im internen Add-on-Netz erreichbar (http://045e59a3-ollama:11434; 045e59a3 = Kennung dieses Repos in HA). Für Zugriff aus dem LAN hier einen Port eintragen.
 ports:
   11434/tcp: null
 ports_description:
