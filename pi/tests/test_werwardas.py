@@ -179,6 +179,30 @@ def test_ollama_falls_back_to_next_server():
     assert post.call_args.kwargs["json"]["model"] == "small:3b"
 
 
+def test_ollama_fallback_can_be_switched_off():
+    """Schalter 'Pi-KI als Ersatz' aus: PC aus -> Fehler statt Pi."""
+    import requests as rq
+
+    from werwardas.analyzers import AnalyzerError
+    from werwardas.analyzers.ollama import OllamaAnalyzer
+
+    cfg = {"servers": [{"url": "http://pc:1", "model": "big:7b"}, {"url": "http://pi:1", "model": "s:3b", "fallback": True}]}
+    analyzer = OllamaAnalyzer(cfg, "", use_fallback=False)
+    assert [s["url"] for s in analyzer.servers] == ["http://pc:1"]
+    with mock.patch("requests.get", side_effect=rq.ConnectionError("aus")) as get:
+        with pytest.raises(AnalyzerError, match="Pi-KI als Ersatz ist ausgeschaltet"):
+            analyzer.analyze(room())
+    assert all("pi:1" not in c.args[0] for c in get.call_args_list)
+
+
+def test_ollama_fallback_switch_via_mqtt(cfg_file):
+    service = Service(Config(cfg_file))
+    service.client = mock.MagicMock()
+    service._on_message(service.client, None, mock.Mock(topic="werwardas/cam/set/ollama_fallback", payload=b"OFF"))
+    assert Config(cfg_file)["ollama_fallback"] is False
+    assert published(service.client, "werwardas/cam/settings")[-1]["ollama_fallback"] == "OFF"
+
+
 def test_ollama_all_servers_down_is_error():
     import requests as rq
 

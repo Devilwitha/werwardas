@@ -122,6 +122,9 @@ class Service:
                 self.cfg.set_runtime("analyzer", payload)
                 self._publish_settings()
                 self.jobs.put(("check", "settings"))
+            elif topic == f"{self.base}/set/ollama_fallback":
+                self.cfg.set_runtime("ollama_fallback", payload.upper() == "ON")
+                self._publish_settings()
             elif topic == f"{self.base}/set/active":
                 self.cfg.set_runtime("active", payload.upper() == "ON")
                 self._publish_settings()
@@ -137,6 +140,7 @@ class Service:
             "analyzer": c["analyzer"],
             "active": "ON" if c["active"] else "OFF",
             "active_hours": c["active_hours"] or "",
+            "ollama_fallback": "ON" if c["ollama_fallback"] else "OFF",
             "references": len(self.references.references()),
         }
         self.client.publish(f"{self.base}/settings", json.dumps(settings), retain=True)
@@ -248,6 +252,14 @@ class Service:
                 "command_topic": f"{self.base}/set/analyzer",
                 "state_topic": settings,
                 "value_template": "{{ value_json.analyzer }}",
+                "entity_category": "config",
+            },
+            ("switch", "ollama_fallback"): {
+                "name": "Pi-KI als Ersatz",
+                "icon": "mdi:raspberry-pi",
+                "command_topic": f"{self.base}/set/ollama_fallback",
+                "state_topic": settings,
+                "value_template": "{{ value_json.ollama_fallback }}",
                 "entity_category": "config",
             },
             ("switch", "active"): {

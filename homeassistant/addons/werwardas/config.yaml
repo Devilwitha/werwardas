@@ -1,5 +1,5 @@
 name: WerWarDas Kamera
-version: "0.2.1"
+version: "0.2.2"
 slug: werwardas
 description: "Aufräum-Wächter: holt das Foto der Kamera, bewertet die Ordnung und meldet sie an Home Assistant"
 url: https://github.com/Devilwitha/werwardas
@@ -22,6 +22,7 @@ options:
       model: "qwen2.5vl:3b"
       timeout_seconds: 1800
       max_width: 768
+      fallback: true
   claude_api_key: ""
   prompt_hint: ""
   active_hours: "08:00-22:00"
@@ -36,6 +37,7 @@ schema:
       model: str
       timeout_seconds: int(30,3600)?
       max_width: int(320,1600)?
+      fallback: bool?
   claude_api_key: password?
   prompt_hint: str?
   active_hours: str?

@@ -48,7 +48,7 @@ def create(name: str, cfg: dict, storage_dir: Path):
     if name == "ollama":
         from .ollama import OllamaAnalyzer
 
-        return OllamaAnalyzer(cfg["ollama"], cfg.get("prompt_hint", ""))
+        return OllamaAnalyzer(cfg["ollama"], cfg.get("prompt_hint", ""), bool(cfg.get("ollama_fallback", True)))
     if name == "claude":
         from .claude import ClaudeAnalyzer
 

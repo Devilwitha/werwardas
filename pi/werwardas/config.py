@@ -36,6 +36,8 @@ DEFAULTS: dict = {
     "active_hours": "08:00-22:00",
     "threshold": 60,
     "active": True,
+    # Ollama-Server mit fallback: true benutzen (Schalter "Pi-KI als Ersatz" in HA)
+    "ollama_fallback": True,
     # reference | ollama | claude
     "analyzer": "reference",
     "prompt_hint": "",
@@ -63,7 +65,7 @@ DEFAULTS: dict = {
 }
 
 # Diese Werte können aus Home Assistant geändert werden und überleben einen Neustart.
-RUNTIME_KEYS = ("interval_minutes", "threshold", "active", "analyzer", "active_hours")
+RUNTIME_KEYS = ("interval_minutes", "threshold", "active", "analyzer", "active_hours", "ollama_fallback")
 
 
 def _merge(base: dict, override: dict) -> dict:

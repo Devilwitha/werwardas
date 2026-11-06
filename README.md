@@ -123,7 +123,8 @@ Zusammen mit der ESP32-CAM (Abschnitt 3b) braucht es dann keinen eigenen Kamera-
 erst der PC (`qwen2.5vl:7b`, wenige Sekunden), ist der aus, das Ollama-Add-on auf dem Pi (`qwen2.5vl:3b`; gemessen
 auf einem Pi 4 mit 8 GB: rund 12 Minuten pro Foto, ein Pi 5 ist etwa zwei- bis dreimal so schnell). Das reicht, denn
 der Pi muss nur bewerten, wenn der PC aus ist, und dann gibt es nichts zu sperren. Das kleine Modell urteilt allerdings
-weniger zuverlässig als das große. Damit der Pi den PC erreicht, muss Ollama dort im LAN lauschen:
+weniger zuverlässig als das große. Soll nur mit dem PC bewertet werden, in HA beim Gerät *WerWarDas Kamera* den Schalter
+**„Pi-KI als Ersatz“** ausschalten (das Ollama-Add-on kann dann auch ganz gestoppt werden). Damit der Pi den PC erreicht, muss Ollama dort im LAN lauschen:
 
 ```powershell
 setx OLLAMA_HOST 0.0.0.0     # danach Ollama beenden und neu starten

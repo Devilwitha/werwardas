@@ -8,6 +8,9 @@ PC mit Grafikkarte und, wenn der aus ist, ein kleineres Modell direkt auf dem Ra
         - {url: "http://192.168.1.139:11434", model: "qwen2.5vl:7b"}
         - {url: "http://045e59a3-ollama:11434", model: "qwen2.5vl:3b", timeout_seconds: 1800}
 
+Server mit `fallback: true` sind nur Ersatz. Sie lassen sich in Home Assistant mit dem Schalter
+"Pi-KI als Ersatz" abschalten (Laufzeitwert `ollama_fallback`), dann wird nur mit den übrigen Servern bewertet.
+
 Ohne `servers` gelten wie bisher `url` und `model`.
 """
 
@@ -35,24 +38,25 @@ SCHEMA = {
 PROBE_TIMEOUT = 3
 
 
-def servers_from_config(cfg: dict) -> list[dict]:
+def servers_from_config(cfg: dict, use_fallback: bool = True) -> list[dict]:
     defaults = {
         "model": cfg.get("model", "qwen2.5vl:7b"),
         "timeout_seconds": cfg.get("timeout_seconds", 600),
         "max_width": cfg.get("max_width", 1024),
     }
     servers = cfg.get("servers") or [{"url": cfg.get("url", "")}]
-    return [{**defaults, **s} for s in servers if s.get("url")]
+    return [{**defaults, **s} for s in servers if s.get("url") and (use_fallback or not s.get("fallback"))]
 
 
 class OllamaAnalyzer:
     name = "ollama"
 
-    def __init__(self, cfg: dict, hint: str):
-        self.servers = servers_from_config(cfg)
+    def __init__(self, cfg: dict, hint: str, use_fallback: bool = True):
+        self.servers = servers_from_config(cfg, use_fallback)
+        self.fallback_off = not use_fallback and len(self.servers) < len(servers_from_config(cfg))
         self.prompt = build_prompt(hint)
         if not self.servers:
-            raise AnalyzerError("Kein Ollama-Server konfiguriert (ollama.url oder ollama.servers)")
+            raise AnalyzerError("Kein Ollama-Server aktiv (ollama.url/ollama.servers, Schalter 'Pi-KI als Ersatz')")
 
     def analyze(self, img: Image.Image) -> Result:
         errors = []
@@ -71,7 +75,8 @@ class OllamaAnalyzer:
                 continue
             log.info("Bewertet von %s (%s)", base, server["model"])
             return result
-        raise AnalyzerError("Kein Ollama-Server konnte bewerten – " + "; ".join(errors))
+        note = " (Pi-KI als Ersatz ist ausgeschaltet)" if self.fallback_off else ""
+        raise AnalyzerError(f"Kein Ollama-Server konnte bewerten{note} – " + "; ".join(errors))
 
     @staticmethod
     def _probe(base: str, model: str) -> str:
