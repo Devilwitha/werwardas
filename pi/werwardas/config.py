@@ -19,6 +19,7 @@ DEFAULTS: dict = {
         "password": "",
         "topic_prefix": "werwardas",
         "discovery_prefix": "homeassistant",
+        "node_id": "",  # Geräte-ID in HA; leer = aus dem Hostnamen
     },
     "camera": {
         # auto | picamera2 | usb | http | file
@@ -47,6 +48,9 @@ DEFAULTS: dict = {
         "url": "http://localhost:11434",
         "model": "qwen2.5vl:7b",
         "timeout_seconds": 600,
+        "max_width": 1024,
+        # optional mehrere Server, der Reihe nach versucht: [{url, model, timeout_seconds, max_width}, ...]
+        "servers": [],
     },
     "claude": {
         "api_key": "",

@@ -65,7 +65,7 @@ class Service:
 
         m = cfg["mqtt"]
         self.base = f"{m['topic_prefix']}/cam"
-        self.node_id = "werwardas_" + socket.gethostname().replace("-", "_").lower()
+        self.node_id = m.get("node_id") or "werwardas_" + socket.gethostname().replace("-", "_").lower()
         self.jobs: queue.Queue[tuple[str, str]] = queue.Queue()
         self.stop_event = threading.Event()
         self.next_run = time.monotonic() + 15  # erste Prüfung kurz nach dem Start

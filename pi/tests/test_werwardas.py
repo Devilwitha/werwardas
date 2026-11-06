@@ -148,10 +148,46 @@ def test_ollama_parses_json():
 
     response = mock.Mock()
     response.json.return_value = {"message": {"content": '{"score": 42, "reason": "Kleidung auf dem Boden."}'}}
-    with mock.patch("requests.post", return_value=response) as post:
+    tags = mock.Mock()
+    tags.json.return_value = {"models": [{"name": "m:latest"}]}
+    with mock.patch("requests.get", return_value=tags), mock.patch("requests.post", return_value=response) as post:
         result = OllamaAnalyzer({"url": "http://x:11434", "model": "m", "timeout_seconds": 5}, "").analyze(room())
     assert (result.score, result.reason) == (42, "Kleidung auf dem Boden.")
     assert post.call_args.kwargs["json"]["messages"][0]["images"]
+
+
+def test_ollama_falls_back_to_next_server():
+    """PC aus -> der Pi übernimmt mit seinem eigenen Modell."""
+    import requests as rq
+
+    from werwardas.analyzers.ollama import OllamaAnalyzer
+
+    def fake_get(url, timeout):
+        if url.startswith("http://pc"):
+            raise rq.ConnectionError("aus")
+        resp = mock.Mock()
+        resp.json.return_value = {"models": [{"name": "small:3b"}]}
+        return resp
+
+    response = mock.Mock()
+    response.json.return_value = {"message": {"content": '{"score": 80, "reason": "Ordentlich."}'}}
+    cfg = {"servers": [{"url": "http://pc:11434", "model": "big:7b"}, {"url": "http://pi:11434", "model": "small:3b"}]}
+    with mock.patch("requests.get", side_effect=fake_get), mock.patch("requests.post", return_value=response) as post:
+        result = OllamaAnalyzer(cfg, "").analyze(room())
+    assert result.score == 80
+    assert post.call_args.args[0] == "http://pi:11434/api/chat"
+    assert post.call_args.kwargs["json"]["model"] == "small:3b"
+
+
+def test_ollama_all_servers_down_is_error():
+    import requests as rq
+
+    from werwardas.analyzers import AnalyzerError
+    from werwardas.analyzers.ollama import OllamaAnalyzer
+
+    with mock.patch("requests.get", side_effect=rq.ConnectionError("aus")):
+        with pytest.raises(AnalyzerError):
+            OllamaAnalyzer({"servers": [{"url": "http://pc:1"}, {"url": "http://pi:1"}]}, "").analyze(room())
 
 
 @pytest.mark.parametrize(

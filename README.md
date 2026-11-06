@@ -19,7 +19,7 @@ Alles ist in **Home Assistant** eingebunden.
 |---|---|
 | [`pi/`](pi) | Kamera-Software für den Raspberry Pi (Python) inklusive Installationsskript |
 | [`windows/`](windows) | Windows-App (C# / .NET 8). Die `.exe` baut GitHub Actions automatisch |
-| [`homeassistant/`](homeassistant) | Blueprint (optional) und Beispiel-Karte fürs Dashboard |
+| [`homeassistant/`](homeassistant) | Add-ons (Kameradienst, Ollama), Blueprint und Beispiel-Karte fürs Dashboard |
 | [`esp32cam/`](esp32cam) | Firmware für eine ESP32-CAM als günstige WLAN-Kamera (PlatformIO) |
 
 ---
@@ -107,6 +107,30 @@ Liegt das Bild schief: `camera.rotation` in der `config.yaml` setzen. **Update:*
 > Läuft der Dienst auf dem überwachten PC selbst, kann man ihn beenden. Die Windows-App gibt den PC dann nach
 > 2 Minuten frei. Wer das nicht will, betreibt denselben Dienst später auf einem Pi (Abschnitt 3) und trägt dort
 > `camera.url` der ESP32-CAM und `ollama.url: http://<IP-des-PCs>:11434` ein.
+
+## 3c. Alles auf dem Home-Assistant-Rechner (Add-ons, ohne Pi und ohne laufenden PC)
+
+Läuft Home Assistant OS auf einem Pi 4/5 mit 8 GB (oder einem Mini-PC), kann der Kameradienst samt KI direkt dort laufen.
+Zusammen mit der ESP32-CAM (Abschnitt 3b) braucht es dann keinen eigenen Kamera-Pi und keinen eingeschalteten PC.
+
+1. *Einstellungen → Add-ons → Add-on-Store → ⋮ → Repositories* → `https://github.com/Devilwitha/werwardas` hinzufügen.
+2. **Ollama (WerWarDas)** installieren und starten. Beim ersten Start lädt es `qwen2.5vl:3b` (ca. 3 GB, dauert eine Weile).
+3. **WerWarDas Kamera** installieren, im Reiter *Konfiguration* `camera_url` (z. B. `http://192.168.1.165/capture`) prüfen
+   und starten. Die MQTT-Zugangsdaten holt sich das Add-on selbst vom Mosquitto-Add-on.
+4. Den Kameradienst auf dem PC entfernen, falls installiert: `.\pi\install-windows.ps1 -Uninstall`.
+
+**PC als Turbo:** In `ollama_servers` stehen mehrere Ollama-Server, die der Reihe nach versucht werden. Standard:
+erst der PC (`qwen2.5vl:7b`, wenige Sekunden), ist der aus, das Ollama-Add-on auf dem Pi (`qwen2.5vl:3b`, auf einem
+Pi 5 etwa 1–3 Minuten, auf einem Pi 4 deutlich länger). Damit der Pi den PC erreicht, muss Ollama dort im LAN lauschen:
+
+```powershell
+setx OLLAMA_HOST 0.0.0.0     # danach Ollama beenden und neu starten
+# einmalig als Administrator: Firewall für das Heimnetz öffnen
+New-NetFirewallRule -DisplayName "Ollama (WerWarDas)" -Direction Inbound -Protocol TCP -LocalPort 11434 -Profile Private -Action Allow
+```
+
+Der ESP32-CAM und dem PC am besten im Router eine feste IP geben, die Add-on-Konfiguration nutzt IP-Adressen.
+**Update:** Sobald im Store eine neue Version erscheint, auf *Aktualisieren* klicken.
 
 ## 4. Bewertung: drei Möglichkeiten
 
