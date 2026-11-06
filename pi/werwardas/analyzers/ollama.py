@@ -6,7 +6,7 @@ PC mit Grafikkarte und, wenn der aus ist, ein kleineres Modell direkt auf dem Ra
     ollama:
       servers:
         - {url: "http://192.168.1.139:11434", model: "qwen2.5vl:7b"}
-        - {url: "http://045e59a3-ollama:11434", model: "qwen2.5vl:3b", timeout_seconds: 1200, max_width: 768}
+        - {url: "http://045e59a3-ollama:11434", model: "qwen2.5vl:3b", timeout_seconds: 1800}
 
 Ohne `servers` gelten wie bisher `url` und `model`.
 """

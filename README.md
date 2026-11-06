@@ -120,8 +120,10 @@ Zusammen mit der ESP32-CAM (Abschnitt 3b) braucht es dann keinen eigenen Kamera-
 4. Den Kameradienst auf dem PC entfernen, falls installiert: `.\pi\install-windows.ps1 -Uninstall`.
 
 **PC als Turbo:** In `ollama_servers` stehen mehrere Ollama-Server, die der Reihe nach versucht werden. Standard:
-erst der PC (`qwen2.5vl:7b`, wenige Sekunden), ist der aus, das Ollama-Add-on auf dem Pi (`qwen2.5vl:3b`, auf einem
-Pi 5 etwa 1–3 Minuten, auf einem Pi 4 deutlich länger). Damit der Pi den PC erreicht, muss Ollama dort im LAN lauschen:
+erst der PC (`qwen2.5vl:7b`, wenige Sekunden), ist der aus, das Ollama-Add-on auf dem Pi (`qwen2.5vl:3b`; gemessen
+auf einem Pi 4 mit 8 GB: rund 12 Minuten pro Foto, ein Pi 5 ist etwa zwei- bis dreimal so schnell). Das reicht, denn
+der Pi muss nur bewerten, wenn der PC aus ist, und dann gibt es nichts zu sperren. Das kleine Modell urteilt allerdings
+weniger zuverlässig als das große. Damit der Pi den PC erreicht, muss Ollama dort im LAN lauschen:
 
 ```powershell
 setx OLLAMA_HOST 0.0.0.0     # danach Ollama beenden und neu starten

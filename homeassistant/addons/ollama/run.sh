@@ -23,7 +23,7 @@ for model in $(jq -r '.models[]' /data/options.json); do
         echo "Modell $model vorhanden"
     else
         echo "Lade Modell $model (einmalig, kann dauern) ..."
-        ollama pull "$model" || echo "WARNUNG: $model konnte nicht geladen werden"
+        if ollama pull "$model" >/tmp/pull.log 2>&1; then echo "Modell $model geladen"; else tail -3 /tmp/pull.log; echo "WARNUNG: $model konnte nicht geladen werden"; fi
     fi
 done
 

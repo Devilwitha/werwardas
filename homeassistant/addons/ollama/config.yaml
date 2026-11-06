@@ -1,5 +1,5 @@
 name: Ollama (WerWarDas)
-version: "0.40.13"
+version: "0.40.13-1"
 slug: ollama
 description: "Lokale KI für die WerWarDas-Bewertung direkt auf dem Home-Assistant-Rechner"
 url: https://ollama.com
