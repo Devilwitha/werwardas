@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw
 from werwardas.analyzers.reference import ReferenceAnalyzer
 from werwardas.config import Config
 from werwardas.service import Service, in_active_hours, normalize_active_hours
+from werwardas.streak import StreakTracker
 
 
 def room(clutter: int = 0, brightness: float = 1.0, seed: int = 1) -> Image.Image:
@@ -148,6 +149,56 @@ def test_camera_error_fails_open(cfg_file):
     service.client = mock.MagicMock()
     state = service.check("interval")
     assert state["error"] is True and state["tidy"] is None
+
+
+def test_streak_counts_tidy_days(tmp_path):
+    tracker = StreakTracker(tmp_path / "streak.json")
+    tracker.update(True, datetime(2026, 1, 1, 10))
+    tracker.update(True, datetime(2026, 1, 2, 10))  # schließt Tag 1 ab -> Streak 1
+    tracker.update(True, datetime(2026, 1, 3, 10))  # schließt Tag 2 ab -> Streak 2
+    assert tracker.streak == 2
+    assert tracker.record == 2
+
+
+def test_streak_resets_on_messy_day(tmp_path):
+    tracker = StreakTracker(tmp_path / "streak.json")
+    tracker.update(True, datetime(2026, 1, 1, 10))
+    tracker.update(True, datetime(2026, 1, 2, 10))  # Tag 1 war ok -> Streak 1
+    tracker.update(False, datetime(2026, 1, 2, 18))  # noch am Tag 2: unordentlich
+    tracker.update(True, datetime(2026, 1, 3, 10))  # schließt Tag 2 ab -> Streak reißt ab
+    assert tracker.streak == 0
+    assert tracker.record == 1
+
+
+def test_streak_ignores_days_without_any_check(tmp_path):
+    tracker = StreakTracker(tmp_path / "streak.json")
+    tracker.update(True, datetime(2026, 1, 1, 10))
+    tracker.update(True, datetime(2026, 1, 5, 10))  # Tage 2-4 ohne Prüfung -> zählen nicht gegen den Streak
+    assert tracker.streak == 1
+
+
+def test_streak_ignores_errors(tmp_path):
+    tracker = StreakTracker(tmp_path / "streak.json")
+    tracker.update(None, datetime(2026, 1, 1, 10))  # an Tag 1 nur ein Fehler
+    tracker.update(True, datetime(2026, 1, 2, 10))  # schließt Tag 1 ab -> zählt nicht, weder für noch gegen
+    assert tracker.streak == 0
+
+
+def test_streak_persists(tmp_path):
+    path = tmp_path / "streak.json"
+    StreakTracker(path).update(True, datetime(2026, 1, 1, 10))
+    tracker = StreakTracker(path)
+    tracker.update(True, datetime(2026, 1, 2, 10))
+    assert tracker.streak == 1
+
+
+def test_service_includes_streak_in_state(cfg_file, tmp_path):
+    service = Service(Config(cfg_file))
+    service.client = mock.MagicMock()
+    room().save(tmp_path / "cam.jpg")
+    service.save_reference()
+    state = service.check("test")
+    assert state["streak"] == 0 and state["record"] == 0
 
 
 def test_discovery(cfg_file):

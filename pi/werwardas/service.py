@@ -16,6 +16,7 @@ from . import __version__, analyzers
 from .analyzers.reference import ReferenceAnalyzer
 from .camera import Camera, CameraError, to_jpeg
 from .config import Config
+from .streak import StreakTracker
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ class Service:
         self.cfg = cfg
         self.camera = Camera(cfg["camera"])
         self.references = ReferenceAnalyzer(cfg["reference"], cfg.storage_dir / "reference")
+        self.streak = StreakTracker(cfg.storage_dir / "streak.json")
         self.photo_dir = cfg.storage_dir / "photos"
         self.photo_dir.mkdir(parents=True, exist_ok=True)
 
@@ -188,6 +190,22 @@ class Service:
                 "state_topic": state,
                 "value_template": "{{ value_json.timestamp }}",
             },
+            ("sensor", "streak"): {
+                "name": "Streak",
+                "icon": "mdi:fire",
+                "unit_of_measurement": "Tage",
+                "state_class": "measurement",
+                "state_topic": state,
+                "value_template": "{{ value_json.streak }}",
+            },
+            ("sensor", "record"): {
+                "name": "Rekord",
+                "icon": "mdi:trophy",
+                "unit_of_measurement": "Tage",
+                "state_class": "measurement",
+                "state_topic": state,
+                "value_template": "{{ value_json.record }}",
+            },
             ("binary_sensor", "busy"): {
                 "name": "Prüfung läuft",
                 "device_class": "running",
@@ -278,6 +296,7 @@ class Service:
     # ------------------------------------------------------------- Prüfung
 
     def _publish_state(self, score, tidy, reason, trigger, analyzer, error=False) -> dict:
+        self.streak.update(tidy)
         state = {
             "score": score,
             "tidy": tidy,
@@ -287,6 +306,8 @@ class Service:
             "trigger": trigger,
             "error": error,
             "paused": analyzer == "paused",
+            "streak": self.streak.streak,
+            "record": self.streak.record,
             "timestamp": now_iso(),
         }
         self.client.publish(f"{self.base}/state", json.dumps(state, ensure_ascii=False), retain=True)

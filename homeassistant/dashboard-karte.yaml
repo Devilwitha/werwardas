@@ -14,6 +14,8 @@ cards:
       - entity: binary_sensor.werwardas_kamera_unordentlich
       - entity: sensor.werwardas_kamera_begrundung
       - entity: sensor.werwardas_kamera_letzte_prufung
+      - entity: sensor.werwardas_kamera_streak
+      - entity: sensor.werwardas_kamera_rekord
       - entity: switch.werwardas_kamera_uberwachung
       - entity: button.werwardas_kamera_jetzt_prufen
       - entity: button.werwardas_kamera_als_aufgeraumt_speichern
@@ -40,14 +42,14 @@ cards:
       - mean
     entities:
       - sensor.werwardas_kamera_ordnung
-  # Streak: braucht vorher die Helfer + das Blueprint "Aufräum-Streak" (siehe README Abschnitt 9).
+  # Streak: kommt automatisch vom Kameradienst, keine Einrichtung nötig (siehe README Abschnitt 8).
   - type: markdown
     content: >
-      ## 🔥 {{ states('counter.werwardas_streak') }} Tage in Folge aufgeräumt
+      ## 🔥 {{ states('sensor.werwardas_kamera_streak') }} Tage in Folge aufgeräumt
 
-      {% if states('counter.werwardas_streak') | int(0) >= states('counter.werwardas_rekord') | int(0)
-            and states('counter.werwardas_streak') | int(0) > 0 %}
+      {% if states('sensor.werwardas_kamera_streak') | int(0) >= states('sensor.werwardas_kamera_rekord') | int(0)
+            and states('sensor.werwardas_kamera_streak') | int(0) > 0 %}
       Neuer Rekord! 🎉
       {% else %}
-      Rekord: {{ states('counter.werwardas_rekord') }} Tage
+      Rekord: {{ states('sensor.werwardas_kamera_rekord') }} Tage
       {% endif %}

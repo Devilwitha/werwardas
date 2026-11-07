@@ -61,6 +61,7 @@ Kurz danach erscheint in Home Assistant automatisch das Gerät **„WerWarDas Ka
 | Ordnung | Score 0–100 % (100 = perfekt aufgeräumt) |
 | Unordentlich | `an`, wenn der Score unter dem Grenzwert liegt |
 | Begründung | z. B. „Kleidung auf dem Boden vor dem Bett“ |
+| Streak / Rekord | Tage in Folge aufgeräumt, siehe Abschnitt 8 |
 | Jetzt prüfen | sofort ein Foto machen und bewerten |
 | Als aufgeräumt speichern | aktuelles Foto als Referenz für den Offline-Vergleich |
 | Überwachung | Schalter zum Pausieren (z. B. im Urlaub) |
@@ -204,7 +205,7 @@ Damit lassen sich auch eigene Regeln bauen, z. B. „nur an Schultagen“ oder �
 
 | Topic | Richtung | Inhalt |
 |---|---|---|
-| `werwardas/cam/state` | Pi → | `{"score": 43, "tidy": false, "threshold": 60, "reason": "…", "analyzer": "ollama", "trigger": "interval", "error": false, "paused": false, "timestamp": "…"}` |
+| `werwardas/cam/state` | Pi → | `{"score": 43, "tidy": false, "threshold": 60, "reason": "…", "analyzer": "ollama", "trigger": "interval", "error": false, "paused": false, "streak": 4, "record": 12, "timestamp": "…"}` |
 | `werwardas/cam/image` | Pi → | letztes Foto (JPEG) |
 | `werwardas/cam/availability` | Pi → | `online` / `offline` |
 | `werwardas/cam/cmd/check` | → Pi | sofort prüfen |
@@ -221,28 +222,19 @@ Damit lassen sich auch eigene Regeln bauen, z. B. „nur an Schultagen“ oder �
 - Die Kamera ist nur für die Sekunden der Aufnahme an, es gibt keinen Dauer-Stream.
 - Tipp: Die Kamera so ausrichten, dass vor allem Boden, Schreibtisch und Bett zu sehen sind.
 
-## 8. Verlauf & Streak (optional)
+## 8. Verlauf & Streak
 
-**Verlauf:** Der Sensor *Ordnung* hat dank `state_class: measurement` automatisch eine Home-Assistant-Historie –
-dafür ist nichts einzurichten. Die aktualisierte [Beispiel-Karte](homeassistant/dashboard-karte.yaml) enthält
-einen `history-graph` (letzte 48 Stunden) und einen `statistics-graph` (Tagesmittel über 30 Tage).
+Beides läuft automatisch mit, ohne weitere Einrichtung.
 
-**Streak:** Zählt die Tage in Folge, an denen das Zimmer nie unordentlich war, inklusive Rekord. Dafür zuerst
-drei Helfer anlegen (*Einstellungen → Geräte & Dienste → Helfer → Helfer hinzufügen*):
+**Verlauf:** Der Sensor *Ordnung* hat dank `state_class: measurement` automatisch eine Home-Assistant-Historie.
+Die aktualisierte [Beispiel-Karte](homeassistant/dashboard-karte.yaml) enthält einen `history-graph`
+(letzte 48 Stunden) und einen `statistics-graph` (Tagesmittel über 30 Tage).
 
-| Helfer-Typ | Name (frei wählbar) | Entity-ID (für die Karte oben) |
-|---|---|---|
-| Zähler | Streak | `counter.werwardas_streak` |
-| Zähler | Rekord | `counter.werwardas_rekord` |
-| Schalter (`input_boolean`) | War heute schon unordentlich | `input_boolean.werwardas_heute_unordentlich` |
-
-Danach das Blueprint importieren und die drei Helfer sowie den *Unordentlich*-Sensor der Kamera eintragen:
-
-[![Blueprint importieren](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FDevilwitha%2Fwerwardas%2Fblob%2Fmain%2Fhomeassistant%2Fblueprints%2Fautomation%2Fwerwardas%2Faufraeum_streak.yaml)
-
-Der Tageswechsel (Standard 00:00 Uhr) wertet den vergangenen Tag: Blieb es die ganze Zeit aufgeräumt, zählt der
-Streak um eins weiter und der Rekord wird bei Bedarf nachgezogen; war es zwischendurch unordentlich, reißt der
-Streak ab.
+**Streak:** Der Kameradienst zählt selbst die Tage in Folge, an denen das Zimmer nie unordentlich war, und merkt
+sich den Rekord (Datei `streak.json` im Datenverzeichnis, überlebt also auch einen Neustart). Beim Gerät
+**„WerWarDas Kamera“** erscheinen dafür automatisch zwei neue Sensoren: **Streak** und **Rekord**. Ein Tag ohne
+jede Prüfung (Dienst aus, Überwachung pausiert) zählt weder für noch gegen den Streak; ein Tag, an dem das
+Zimmer mindestens einmal als unordentlich erkannt wurde, setzt ihn auf 0 zurück.
 
 ## 9. Entwicklung
 
