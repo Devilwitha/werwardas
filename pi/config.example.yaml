@@ -48,4 +48,5 @@ claude:
 
 storage:
   dir: /var/lib/werwardas
-  keep_days: 7        # Fotos werden danach gelöscht
+  keep_days: 7        # Fotos werden spätestens danach gelöscht
+  max_photos: 4       # nur das aktuelle Foto und die 3 davor aufheben

@@ -216,7 +216,7 @@ Damit lassen sich auch eigene Regeln bauen, z. B. „nur an Schultagen“ oder �
 
 ## 7. Datenschutz
 
-- Fotos bleiben auf dem Pi (`/var/lib/werwardas/photos`) und werden nach 7 Tagen gelöscht.
+- Fotos bleiben auf dem Pi (`/var/lib/werwardas/photos`) es bleiben nur das aktuelle und die 3 vorherigen (`storage.max_photos: 4`).
   Nur bei der Bewertung `claude` wird das Foto an die Claude API geschickt.
 - Die Kamera ist nur für die Sekunden der Aufnahme an, es gibt keinen Dauer-Stream.
 - Tipp: Die Kamera so ausrichten, dass vor allem Boden, Schreibtisch und Bett zu sehen sind.
