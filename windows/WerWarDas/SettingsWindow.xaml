@@ -57,7 +57,7 @@
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                    <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
                 </Grid.RowDefinitions>
                 <TextBlock Style="{StaticResource Label}" Text="Steuerung" />
                 <ComboBox x:Name="ModeBox" Grid.Column="1">
@@ -79,7 +79,13 @@
                                  ToolTip="Leer lassen = PIN unverändert. Mit der PIN lässt sich die Sperre im Notfall aufheben." />
                     <CheckBox x:Name="RemovePinBox" Content="PIN entfernen" VerticalAlignment="Center" Margin="10,0,0,0" />
                 </StackPanel>
-                <CheckBox x:Name="AutostartBox" Grid.Row="4" Grid.Column="1" Margin="0,8,0,0"
+                <TextBlock Style="{StaticResource Label}" Grid.Row="4" Text="Notfall-Entsperrung" />
+                <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
+                    <TextBox x:Name="EmergencyBox" Width="80"
+                             ToolTip="So lange bleibt der PC nach Eingabe der Notfall-PIN frei, egal was die Kamera meldet." />
+                    <TextBlock Text="Min. nach PIN (1–1440)" VerticalAlignment="Center" Margin="8,0,0,0" />
+                </StackPanel>
+                <CheckBox x:Name="AutostartBox" Grid.Row="5" Grid.Column="1" Margin="0,8,0,0"
                           Content="Mit Windows starten" />
             </Grid>
         </GroupBox>

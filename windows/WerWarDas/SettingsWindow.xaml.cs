@@ -36,6 +36,7 @@ public partial class SettingsWindow : Window
         ModeBox.SelectedIndex = _settings.Mode == ControlMode.Automatic ? 0 : 1;
         GraceBox.Text = _settings.GraceMinutes.ToString();
         ShutdownBox.Text = _settings.ShutdownAfterMinutes.ToString();
+        EmergencyBox.Text = _settings.EmergencyUnlockMinutes.ToString();
         AutostartBox.IsChecked = _settings.Autostart;
         RemovePinBox.IsEnabled = _settings.HasPin;
     }
@@ -81,6 +82,11 @@ public partial class SettingsWindow : Window
             ErrorText.Text = "Bitte bei den Minuten nur ganze Zahlen ab 0 eingeben.";
             return;
         }
+        if (!int.TryParse(EmergencyBox.Text, out var emergency) || emergency is < 1 or > 1440)
+        {
+            ErrorText.Text = "Notfall-Entsperrung: bitte eine ganze Zahl von 1 bis 1440 Minuten eingeben.";
+            return;
+        }
 
         if (_cam != null)
         {
@@ -114,6 +120,7 @@ public partial class SettingsWindow : Window
         _settings.Mode = ModeBox.SelectedIndex == 0 ? ControlMode.Automatic : ControlMode.HomeAssistant;
         _settings.GraceMinutes = grace;
         _settings.ShutdownAfterMinutes = shutdown;
+        _settings.EmergencyUnlockMinutes = emergency;
         _settings.Autostart = AutostartBox.IsChecked == true;
         if (RemovePinBox.IsChecked == true) _settings.SetPin("");
         else if (!string.IsNullOrEmpty(PinBox.Password)) _settings.SetPin(PinBox.Password);

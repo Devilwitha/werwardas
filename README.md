@@ -187,7 +187,7 @@ Die App läuft danach im Infobereich (🟢 alles ok, 🟡 Hinweis, 🔴 gesperrt
 4. Aufräumen → **„Ich habe aufgeräumt – jetzt prüfen“** klicken → der Pi macht sofort ein Foto → ist es ordentlich, ist der PC frei. 🎉
 
 **Sicherheitsnetz:** Ist der Broker oder die Kamera länger als 2 Minuten nicht erreichbar, oder schlägt die Bewertung fehl,
-wird der PC **freigegeben**. Mit der optionalen **Notfall-PIN** lässt sich die Sperre für 60 Minuten aufheben.
+wird der PC **freigegeben**. Mit der optionalen **Notfall-PIN** lässt sich die Sperre aufheben – wie lange, steht in den Einstellungen unter „Notfall-Entsperrung“ (Standard 60 Minuten).
 Die PIN schützt auch die Einstellungen und das Beenden der App.
 
 > Hinweis: Das ist ein Motivations-Werkzeug, kein Hochsicherheits-Schloss. Windows-Taste, Alt+Tab, Alt+F4 usw. sind
