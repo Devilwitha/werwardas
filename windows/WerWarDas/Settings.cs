@@ -37,6 +37,8 @@ public sealed class Settings
     public int FailOpenMinutes { get; set; } = 2;
     public string PinHash { get; set; } = "";
     public bool Autostart { get; set; } = true;
+    /// <summary>Alle so viele Stunden auf GitHub nach einer neuen Version suchen (0 = nie automatisch).</summary>
+    public int UpdateCheckHours { get; set; } = 1;
 
     public static string Folder =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WerWarDas");

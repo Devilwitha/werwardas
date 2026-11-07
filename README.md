@@ -231,4 +231,10 @@ cd pi && pip install -r requirements.txt numpy pillow pytest && python -m pytest
 dotnet build windows/WerWarDas/WerWarDas.csproj
 ```
 
-Ein neues Release mit fertiger exe entsteht durch einen Tag: `git tag v0.1.0 && git push --tags`.
+Jeder Push auf `main`, der etwas unter `windows/` ändert, baut per GitHub Actions automatisch ein neues
+Release `v1.0.<Laufnummer>` mit angehängter `WerWarDas.exe`.
+
+**Automatische Updates:** Die App sucht alle *n* Stunden nach dem neuesten Release (Einstellungen → „Nach Updates
+suchen“, Standard 1 Stunde, 0 = nie; von Hand über das Tray-Menü). Eine neuere Exe wird heruntergeladen, auf
+Größe, SHA-256-Prüfsumme und Versionsnummer geprüft und eingespielt, sobald der PC **frei** ist (nicht gesperrt,
+kein Hinweis, keine Notfall-Entsperrung). Danach startet die App von selbst neu.

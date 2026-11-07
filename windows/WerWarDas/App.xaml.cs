@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;
@@ -12,6 +12,7 @@ public partial class App : Application
     private MqttService? _mqtt;
     private Controller? _controller;
     private TrayIcon? _tray;
+    private Updater? _updater;
 
     public static new App Current => (App)Application.Current;
     public static Settings Settings { get; private set; } = new();
@@ -21,6 +22,12 @@ public partial class App : Application
         base.OnStartup(e);
 
         _singleInstance = new Mutex(true, @"Local\WerWarDas.SingleInstance", out var isNew);
+        if (!isNew && Array.IndexOf(e.Args, Updater.UpdatedArg) >= 0)
+        {
+            // Nach einem Update beendet sich die alte Version gerade noch.
+            try { isNew = _singleInstance.WaitOne(TimeSpan.FromSeconds(30)); }
+            catch (AbandonedMutexException) { isNew = true; }
+        }
         if (!isNew)
         {
             MessageBox.Show("WerWarDas läuft bereits (siehe Symbol unten rechts in der Taskleiste).", "WerWarDas");
@@ -29,7 +36,8 @@ public partial class App : Application
         }
 
         DispatcherUnhandledException += OnUnhandledException;
-        Log.Write("WerWarDas gestartet");
+        Log.Write($"WerWarDas {Updater.CurrentVersion.ToString(3)} gestartet");
+        Updater.CleanupAfterUpdate();
 
         var firstStart = !Settings.Exists;
         Settings = Settings.Load();
@@ -53,10 +61,28 @@ public partial class App : Application
         _controller = new Controller(Settings, _mqtt, Dispatcher);
         _tray ??= new TrayIcon(_controller);
         _mqtt.Start();
+        _updater = new Updater(Settings.UpdateCheckHours, Dispatcher,
+            canRestart: () => _controller?.State == PcState.Free,
+            beforeRestart: () =>
+            {
+                StopServices();
+                _singleInstance?.ReleaseMutex();
+                _singleInstance?.Dispose();
+                _singleInstance = null;
+            });
+    }
+
+    public async void CheckForUpdates()
+    {
+        if (_updater == null) return;
+        var message = await _updater.CheckAsync();
+        _tray?.ShowBalloon("WerWarDas-Update", message);
     }
 
     private void StopServices()
     {
+        _updater?.Dispose();
+        _updater = null;
         _controller?.Stop();
         _tray?.Dispose();
         _tray = null;

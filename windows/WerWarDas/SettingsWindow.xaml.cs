@@ -37,6 +37,7 @@ public partial class SettingsWindow : Window
         GraceBox.Text = _settings.GraceMinutes.ToString();
         ShutdownBox.Text = _settings.ShutdownAfterMinutes.ToString();
         EmergencyBox.Text = _settings.EmergencyUnlockMinutes.ToString();
+        UpdateBox.Text = _settings.UpdateCheckHours.ToString();
         AutostartBox.IsChecked = _settings.Autostart;
         RemovePinBox.IsEnabled = _settings.HasPin;
     }
@@ -87,6 +88,11 @@ public partial class SettingsWindow : Window
             ErrorText.Text = "Notfall-Entsperrung: bitte eine ganze Zahl von 1 bis 1440 Minuten eingeben.";
             return;
         }
+        if (!int.TryParse(UpdateBox.Text, out var updateHours) || updateHours is < 0 or > 168)
+        {
+            ErrorText.Text = "Nach Updates suchen: bitte eine ganze Zahl von 0 bis 168 Stunden eingeben.";
+            return;
+        }
 
         if (_cam != null)
         {
@@ -121,6 +127,7 @@ public partial class SettingsWindow : Window
         _settings.GraceMinutes = grace;
         _settings.ShutdownAfterMinutes = shutdown;
         _settings.EmergencyUnlockMinutes = emergency;
+        _settings.UpdateCheckHours = updateHours;
         _settings.Autostart = AutostartBox.IsChecked == true;
         if (RemovePinBox.IsChecked == true) _settings.SetPin("");
         else if (!string.IsNullOrEmpty(PinBox.Password)) _settings.SetPin(PinBox.Password);

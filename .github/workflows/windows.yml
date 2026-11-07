@@ -1,14 +1,21 @@
 name: Windows-App bauen
 
+# Jeder Push auf main, der die Windows-App ändert, erzeugt ein Release mit der fertigen WerWarDas.exe.
+# Die installierte App sucht regelmäßig nach diesem Release und aktualisiert sich selbst.
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    paths: ["windows/**", ".github/workflows/windows.yml"]
   pull_request:
+    paths: ["windows/**", ".github/workflows/windows.yml"]
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -20,16 +27,12 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Version aus Tag setzen
+      - name: Version festlegen
         id: version
         shell: pwsh
         run: |
-          if ("${{ github.ref_type }}" -eq "tag") {
-            $v = "${{ github.ref_name }}".TrimStart("v")
-          } else {
-            $v = "0.1.0"
-          }
-          "version=$v" >> $env:GITHUB_OUTPUT
+          # Fortlaufende Nummer, damit jede neue Version größer ist als die vorige
+          "version=1.0.${{ github.run_number }}" >> $env:GITHUB_OUTPUT
 
       - name: Exe bauen (eine Datei, ohne .NET-Installation lauffähig)
         run: >
@@ -48,8 +51,15 @@ jobs:
           path: out/WerWarDas.exe
 
       - name: Release erstellen
-        if: github.ref_type == 'tag'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: out/WerWarDas.exe
-          generate_release_notes: true
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ steps.version.outputs.version }}"
+          gh release create "v$v" out/WerWarDas.exe `
+            --repo "${{ github.repository }}" `
+            --target "${{ github.sha }}" `
+            --title "WerWarDas $v" `
+            --generate-notes `
+            --latest

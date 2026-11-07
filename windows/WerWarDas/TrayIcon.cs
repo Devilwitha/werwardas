@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows;
 using Forms = System.Windows.Forms;
@@ -34,7 +34,9 @@ public sealed class TrayIcon : IDisposable
         _settingsItem = new Forms.ToolStripMenuItem("Einstellungen …", null, (_, _) => App.Current.OpenSettings());
         menu.Items.Add(_settingsItem);
         menu.Items.Add("Logdatei öffnen", null, (_, _) => OpenLog());
+        menu.Items.Add("Nach Updates suchen", null, (_, _) => App.Current.CheckForUpdates());
         menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add(new Forms.ToolStripMenuItem($"Version {Updater.CurrentVersion.ToString(3)}") { Enabled = false });
         _exitItem = new Forms.ToolStripMenuItem("Beenden", null, (_, _) => App.Current.RequestExit());
         menu.Items.Add(_exitItem);
 
