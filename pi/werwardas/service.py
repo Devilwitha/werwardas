@@ -296,8 +296,10 @@ class Service:
     def _capture(self):
         img = self.camera.capture()
         name = datetime.now().strftime("%Y%m%d_%H%M%S") + ".jpg"
-        img.save(self.photo_dir / name, quality=85)
+        width = int(self.cfg["storage"].get("photo_width", 1280))
+        (self.photo_dir / name).write_bytes(to_jpeg(img, max_width=width, quality=80))
         self.client.publish(f"{self.base}/image", to_jpeg(img, max_width=1280, quality=80), retain=True)
+        self.cleanup()
         return img
 
     def check(self, trigger: str) -> dict:
@@ -337,9 +339,14 @@ class Service:
         self._publish_settings()
 
     def cleanup(self) -> None:
-        cutoff = datetime.now() - timedelta(days=int(self.cfg["storage"]["keep_days"]))
-        for photo in self.photo_dir.glob("*.jpg"):
-            if datetime.fromtimestamp(photo.stat().st_mtime) < cutoff:
+        storage = self.cfg["storage"]
+        cutoff = datetime.now() - timedelta(days=int(storage["keep_days"]))
+        max_photos = int(storage.get("max_photos", 0))
+        # Dateinamen sind Zeitstempel -> alphabetisch = chronologisch, neueste zuletzt
+        photos = sorted(self.photo_dir.glob("*.jpg"))
+        for i, photo in enumerate(photos):
+            too_many = max_photos and i < len(photos) - max_photos
+            if too_many or datetime.fromtimestamp(photo.stat().st_mtime) < cutoff:
                 photo.unlink(missing_ok=True)
 
     # ---------------------------------------------------------------- Loop
@@ -357,7 +364,6 @@ class Service:
                 except queue.Empty:
                     job, trigger = "check", "interval"
                     self.next_run = time.monotonic() + self.cfg["interval_minutes"] * 60
-                    self.cleanup()
                 if job == "stop":
                     break
                 if job == "reference":

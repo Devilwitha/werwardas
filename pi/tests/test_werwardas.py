@@ -118,6 +118,22 @@ def test_service_check_publishes_state(cfg_file, tmp_path):
     assert published(service.client, "werwardas/cam/state")[-1]["trigger"] == "pc"
 
 
+def test_photo_history_is_capped(cfg_file, tmp_path):
+    cfg = Config(cfg_file)
+    cfg.data["storage"]["max_photos"] = 3
+    service = Service(cfg)
+    service.client = mock.MagicMock()
+    for i in range(5):
+        (service.photo_dir / f"20260101_00000{i}.jpg").write_bytes(b"x")
+    Image.new("RGB", (1600, 1200)).save(tmp_path / "cam.jpg")
+    service._capture()
+    photos = sorted(p.name for p in service.photo_dir.glob("*.jpg"))
+    assert len(photos) == 3
+    assert photos[0] == "20260101_000003.jpg", "die ältesten Fotos fliegen raus"
+    with Image.open(service.photo_dir / photos[-1]) as newest:
+        assert newest.width == 1280
+
+
 def test_service_paused_is_tidy(cfg_file):
     cfg = Config(cfg_file)
     cfg.set_runtime("active", False)

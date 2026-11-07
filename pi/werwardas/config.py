@@ -61,6 +61,10 @@ DEFAULTS: dict = {
     "storage": {
         "dir": "/var/lib/werwardas",
         "keep_days": 7,
+        # Höchstens so viele Fotos aufheben (bei kurzem Intervall läuft sonst der Speicher voll); 0 = unbegrenzt
+        "max_photos": 500,
+        # Gespeicherte Fotos auf diese Breite verkleinern (die Bewertung nutzt weiter das Originalbild)
+        "photo_width": 1280,
     },
 }
 
