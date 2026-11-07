@@ -221,7 +221,30 @@ Damit lassen sich auch eigene Regeln bauen, z. B. „nur an Schultagen“ oder �
 - Die Kamera ist nur für die Sekunden der Aufnahme an, es gibt keinen Dauer-Stream.
 - Tipp: Die Kamera so ausrichten, dass vor allem Boden, Schreibtisch und Bett zu sehen sind.
 
-## 8. Entwicklung
+## 8. Verlauf & Streak (optional)
+
+**Verlauf:** Der Sensor *Ordnung* hat dank `state_class: measurement` automatisch eine Home-Assistant-Historie –
+dafür ist nichts einzurichten. Die aktualisierte [Beispiel-Karte](homeassistant/dashboard-karte.yaml) enthält
+einen `history-graph` (letzte 48 Stunden) und einen `statistics-graph` (Tagesmittel über 30 Tage).
+
+**Streak:** Zählt die Tage in Folge, an denen das Zimmer nie unordentlich war, inklusive Rekord. Dafür zuerst
+drei Helfer anlegen (*Einstellungen → Geräte & Dienste → Helfer → Helfer hinzufügen*):
+
+| Helfer-Typ | Name (frei wählbar) | Entity-ID (für die Karte oben) |
+|---|---|---|
+| Zähler | Streak | `counter.werwardas_streak` |
+| Zähler | Rekord | `counter.werwardas_rekord` |
+| Schalter (`input_boolean`) | War heute schon unordentlich | `input_boolean.werwardas_heute_unordentlich` |
+
+Danach das Blueprint importieren und die drei Helfer sowie den *Unordentlich*-Sensor der Kamera eintragen:
+
+[![Blueprint importieren](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FDevilwitha%2Fwerwardas%2Fblob%2Fmain%2Fhomeassistant%2Fblueprints%2Fautomation%2Fwerwardas%2Faufraeum_streak.yaml)
+
+Der Tageswechsel (Standard 00:00 Uhr) wertet den vergangenen Tag: Blieb es die ganze Zeit aufgeräumt, zählt der
+Streak um eins weiter und der Rekord wird bei Bedarf nachgezogen; war es zwischendurch unordentlich, reißt der
+Streak ab.
+
+## 9. Entwicklung
 
 ```bash
 # Pi-Software lokal testen

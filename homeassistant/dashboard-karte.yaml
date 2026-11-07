@@ -25,3 +25,29 @@ cards:
       green: 70
       yellow: 50
       red: 0
+  # Verlauf: funktioniert sofort, ohne weitere Einrichtung (der Sensor "Ordnung" hat
+  # dank state_class "measurement" automatisch eine Home-Assistant-Historie).
+  - type: history-graph
+    title: Ordnung – letzte 48 Stunden
+    hours_to_show: 48
+    entities:
+      - entity: sensor.werwardas_kamera_ordnung
+  - type: statistics-graph
+    title: Ordnung – Verlauf (Tagesmittel)
+    days_to_show: 30
+    period: day
+    stat_types:
+      - mean
+    entities:
+      - sensor.werwardas_kamera_ordnung
+  # Streak: braucht vorher die Helfer + das Blueprint "Aufräum-Streak" (siehe README Abschnitt 9).
+  - type: markdown
+    content: >
+      ## 🔥 {{ states('counter.werwardas_streak') }} Tage in Folge aufgeräumt
+
+      {% if states('counter.werwardas_streak') | int(0) >= states('counter.werwardas_rekord') | int(0)
+            and states('counter.werwardas_streak') | int(0) > 0 %}
+      Neuer Rekord! 🎉
+      {% else %}
+      Rekord: {{ states('counter.werwardas_rekord') }} Tage
+      {% endif %}
