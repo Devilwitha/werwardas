@@ -15,3 +15,12 @@ venv/
 # ESP32-CAM
 esp32cam/.pio/
 esp32cam/include/secrets.h
+
+# Android
+android/.gradle/
+android/build/
+android/*/build/
+android/local.properties
+android/keystore.properties
+*.jks
+*.keystore

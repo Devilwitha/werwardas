@@ -19,6 +19,7 @@ Alles ist in **Home Assistant** eingebunden.
 |---|---|
 | [`pi/`](pi) | Kamera-Software für den Raspberry Pi (Python) inklusive Installationsskript |
 | [`windows/`](windows) | Windows-App (C# / .NET 8). Die `.exe` baut GitHub Actions automatisch |
+| [`android/`](android) | Android-Apps für das Kinderhandy und die Eltern (Kotlin), auch unterwegs über Nabu Casa – siehe [android/README.md](android/README.md) |
 | [`homeassistant/`](homeassistant) | Add-ons (Kameradienst, Ollama), Blueprint und Beispiel-Karte fürs Dashboard |
 | [`esp32cam/`](esp32cam) | Firmware für eine ESP32-CAM als günstige WLAN-Kamera (PlatformIO) |
 
