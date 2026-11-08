@@ -32,8 +32,10 @@ class LockView(context: Context, private val actions: GuardActions?) : LinearLay
     init {
         orientation = VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
-        setBackgroundColor(0xFF12161B.toInt())
-        setPadding(context.dp(24), context.dp(40), context.dp(24), context.dp(24))
+        setBackgroundColor(0xFF0B0F14.toInt())
+        isFocusableInTouchMode = true
+        isFocusable = true
+        setPadding(context.dp(24), context.dp(48), context.dp(24), context.dp(24))
 
         headline.apply {
             text = "🧹 Zimmer aufräumen!"
@@ -146,6 +148,25 @@ class LockView(context: Context, private val actions: GuardActions?) : LinearLay
             }
         }
         ticker.post(run)
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        requestFocus()
+        // Status- und Navigationsleiste ausblenden (sticky), damit die Sperre den Bildschirm füllt.
+        @Suppress("DEPRECATION")
+        systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+    }
+
+    /** Zurück-Taste schluckt die Sperre, statt das Kind zur vorherigen App zu lassen. */
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.keyCode == android.view.KeyEvent.KEYCODE_BACK) return true
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onDetachedFromWindow() {

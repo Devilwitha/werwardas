@@ -54,6 +54,8 @@ data class Device(
                 if (e.attrs.optString("werwardas") != "phone") continue
                 val device = e.attrs.optString("device_name").ifEmpty { e.name.removeSuffix(" WerWarDas Status") }
                 val notifyBase = e.id.removePrefix("sensor.").removeSuffix("_werwardas_status")
+                // Befehle an das Handy laufen über den mobile_app-Notify-Dienst (notify.mobile_app_<gerät>).
+                // Die notify.<gerät>-Entität existiert zwar, ist aber kein aufrufbarer Dienst.
                 devices += Device(
                     key = "phone_$notifyBase",
                     name = device,
@@ -64,7 +66,7 @@ data class Device(
                     lockSwitch = null,
                     warnButton = null,
                     shutdownButton = null,
-                    notifyService = "notify.$notifyBase".takeIf { states.containsKey("notify.$notifyBase") },
+                    notifyService = "notify.mobile_app_$notifyBase",
                 )
             }
             return devices.sortedBy { it.name }

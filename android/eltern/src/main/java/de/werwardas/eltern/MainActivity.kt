@@ -178,9 +178,7 @@ class MainActivity : Activity() {
             text = "Überwachung aktiv"; isChecked = monitoring?.state == "on"; textSize = 15f
         }
         card.addView(monSwitch, cardLp())
-        val save = Button(this).apply {
-            text = "Speichern"; isAllCaps = false
-            setOnClickListener {
+        val save = de.werwardas.common.greenButton(this, "Speichern") {
                 intervalField.text.toString().toIntOrNull()?.coerceIn(1, 240)?.let {
                     setNumber(client, "number.werwardas_kamera_intervall", it)
                 }
@@ -192,7 +190,6 @@ class MainActivity : Activity() {
                 if (monitoring != null) client.callService("switch", if (monSwitch.isChecked) "turn_on" else "turn_off",
                     entityId = "switch.werwardas_kamera_uberwachung")
                 Toast.makeText(this@MainActivity, "Gespeichert", Toast.LENGTH_SHORT).show()
-            }
         }
         card.addView(save, cardLp())
     }
@@ -237,7 +234,7 @@ class MainActivity : Activity() {
         val user = fieldIn(root, "Benutzer", prefs.user)
         val pass = fieldIn(root, "Passwort", type = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
         val status = text("", Colors.BLUE, 14f)
-        val btn = Button(this).apply { text = "Anmelden"; isAllCaps = false }
+        val btn = de.werwardas.common.greenButton(this, "Anmelden") {}
         btn.setOnClickListener {
             val base = url.text.toString().trim().trimEnd('/')
             if (base.isEmpty() || user.text.isEmpty() || pass.text.isEmpty()) {
@@ -333,9 +330,8 @@ class MainActivity : Activity() {
         return tv
     }
 
-    private fun button(t: String, onClick: () -> Unit) = root.addView(Button(this).apply {
-        text = t; isAllCaps = false; setOnClickListener { onClick() }
-    }, rowLp())
+    private fun button(t: String, onClick: () -> Unit) =
+        root.addView(de.werwardas.common.greenButton(this, t, onClick), rowLp())
 
     private fun card(): LinearLayout {
         val c = LinearLayout(this).apply {

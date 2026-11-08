@@ -110,11 +110,26 @@ class OverlayHost(private val app: Context) {
         WindowManager.LayoutParams.MATCH_PARENT,
         WindowManager.LayoutParams.MATCH_PARENT,
         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        // Fokussierbar (fängt die Zurück-Taste ab) und über die ganze Fläche inkl. Systemleisten.
         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
             WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
         PixelFormat.OPAQUE,
     )
+
+    /** Falls die Sperre angezeigt sein soll, aber das Fenster verschwunden ist (z. B. nach Home), neu einblenden. */
+    fun reassertLock() = main.post {
+        if (lockWanted && lockView == null && canShow) {
+            val view = LockView(app, actions)
+            wm.addView(view, overlayParams())
+            lockView = view
+            lockView?.update(info)
+            FileLog.write("Sperre wieder in den Vordergrund geholt")
+        } else {
+            lockView?.bringToFront()
+        }
+    }
 
     private fun noticeParams() = WindowManager.LayoutParams(
         WindowManager.LayoutParams.WRAP_CONTENT,

@@ -94,8 +94,9 @@ class GuardService : Service(), HaClient.Listener, GuardActions {
         main.post(object : Runnable {
             override fun run() {
                 evaluate()
+                if (state == PhoneState.LOCKED) overlay.reassertLock()
                 maybeCheckForUpdate()
-                main.postDelayed(this, 15_000)
+                main.postDelayed(this, if (state == PhoneState.LOCKED) 3_000 else 15_000)
             }
         })
     }

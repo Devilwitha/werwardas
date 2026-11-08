@@ -23,13 +23,16 @@ fun Context.dp(value: Int): Int =
     TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), resources.displayMetrics).toInt()
 
 object Colors {
-    const val BLUE = 0xFF2684D6.toInt()
-    const val GREEN = 0xFF2EB85C.toInt()
+    // Dunkles Design mit Grün als Akzent.
+    const val GREEN = 0xFF2FD96B.toInt()
+    const val GREEN_DEEP = 0xFF1F8F49.toInt()
+    const val BLUE = GREEN            // frühere Akzentstellen nutzen jetzt ebenfalls Grün
     const val YELLOW = 0xFFF0B428.toInt()
-    const val RED = 0xFFDC3C3C.toInt()
-    const val GRAY = 0xFF828C96.toInt()
-    const val TEXT = 0xFF20262C.toInt()
-    const val CARD = 0xFFF2F4F7.toInt()
+    const val RED = 0xFFF0564B.toInt()
+    const val GRAY = 0xFF8A94A2.toInt()
+    const val BG = 0xFF11161C.toInt()
+    const val TEXT = 0xFFE6EAF0.toInt()
+    const val CARD = 0xFF1B222B.toInt()
 }
 
 /** Kleiner Baukasten für Formulare ohne XML-Layouts. */
@@ -51,7 +54,7 @@ class Form(private val ctx: Context) {
     }, 4) as TextView
 
     fun section(text: String) = add(TextView(ctx).apply {
-        this.text = text; textSize = 13f; setTypeface(typeface, Typeface.BOLD); setTextColor(Colors.BLUE)
+        this.text = text; textSize = 13f; setTypeface(typeface, Typeface.BOLD); setTextColor(Colors.GREEN)
         isAllCaps = true
     }, 22) as TextView
 
@@ -80,9 +83,11 @@ class Form(private val ctx: Context) {
         text = label; isChecked = checked; textSize = 15f
     }, 10) as Switch
 
-    fun button(text: String, onClick: () -> Unit) = add(Button(ctx).apply {
-        this.text = text; isAllCaps = false; setOnClickListener { onClick() }
-    }, 8) as Button
+    fun button(text: String, onClick: () -> Unit): Button {
+        val b = greenButton(ctx, text, onClick)
+        add(b, 8)
+        return b
+    }
 
     fun row(vararg views: View): LinearLayout {
         val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
@@ -96,8 +101,17 @@ class Form(private val ctx: Context) {
     fun custom(v: View, top: Int = 8) = add(v, top)
 }
 
+/** Grün gefüllter Knopf mit weißer Schrift, passend zum dunklen Design. */
+fun greenButton(ctx: Context, text: String, onClick: () -> Unit) = Button(ctx).apply {
+    this.text = text; isAllCaps = false; setTextColor(0xFFFFFFFF.toInt())
+    background = GradientDrawable().apply { setColor(Colors.GREEN_DEEP); cornerRadius = ctx.dp(10).toFloat() }
+    setOnClickListener { onClick() }
+}
+
 fun Context.smallButton(text: String, onClick: () -> Unit) = Button(this).apply {
-    this.text = text; isAllCaps = false; textSize = 13f; setOnClickListener { onClick() }
+    this.text = text; isAllCaps = false; textSize = 13f; setTextColor(0xFFFFFFFF.toInt())
+    background = GradientDrawable().apply { setColor(Colors.GREEN_DEEP); cornerRadius = dp(10).toFloat() }
+    setOnClickListener { onClick() }
 }
 
 fun badge(view: TextView, text: String, color: Int) {
