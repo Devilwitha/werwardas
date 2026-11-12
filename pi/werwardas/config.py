@@ -41,6 +41,12 @@ DEFAULTS: dict = {
     # reference | ollama | claude
     "analyzer": "reference",
     "prompt_hint": "",
+    # Unveränderte Fotos nicht neu bewerten (spart teure KI-Läufe).
+    # Schalter "Unveränderte überspringen" in Home Assistant.
+    "skip_unchanged": True,
+    # Höchstens so viel Anteil geänderter Kacheln (0..1) gilt noch als "unverändert" ->
+    # der Score der letzten Bewertung wird übernommen. Kleiner = vorsichtiger (öfter neu bewerten).
+    "unchanged_fraction": 0.03,
     "reference": {
         "sensitivity": 25,
         "gain": 5,
@@ -69,7 +75,15 @@ DEFAULTS: dict = {
 }
 
 # Diese Werte können aus Home Assistant geändert werden und überleben einen Neustart.
-RUNTIME_KEYS = ("interval_minutes", "threshold", "active", "analyzer", "active_hours", "ollama_fallback")
+RUNTIME_KEYS = (
+    "interval_minutes",
+    "threshold",
+    "active",
+    "analyzer",
+    "active_hours",
+    "ollama_fallback",
+    "skip_unchanged",
+)
 
 
 def _merge(base: dict, override: dict) -> dict:

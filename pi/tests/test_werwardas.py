@@ -119,6 +119,53 @@ def test_service_check_publishes_state(cfg_file, tmp_path):
     assert published(service.client, "werwardas/cam/state")[-1]["trigger"] == "pc"
 
 
+def test_skip_unchanged_reuses_last_score(cfg_file, tmp_path):
+    cfg = Config(cfg_file)
+    service = Service(cfg)
+    service.client = mock.MagicMock()
+
+    room().save(tmp_path / "cam.jpg")
+    service.save_reference()
+
+    messy = room(clutter=40, seed=1)
+    messy.save(tmp_path / "cam.jpg")
+    first = service.check("interval")  # erste echte Bewertung
+    assert first["tidy"] is False
+
+    with mock.patch.object(service.references, "analyze", wraps=service.references.analyze) as spy:
+        messy.save(tmp_path / "cam.jpg")  # identisches Foto
+        reused = service.check("interval")
+        assert spy.call_count == 0, "unverändertes Foto darf nicht neu bewertet werden"
+        assert reused["score"] == first["score"] and reused["tidy"] is False
+
+        # Manuelle Prüfung bewertet trotz unverändertem Foto neu.
+        service.check("manual")
+        assert spy.call_count == 1
+
+        # Deutlich verändertes (aufgeräumtes) Foto -> neu bewerten.
+        room(seed=1).save(tmp_path / "cam.jpg")
+        tidy = service.check("interval")
+        assert spy.call_count == 2
+        assert tidy["tidy"] is True
+
+
+def test_skip_unchanged_off_always_reanalyzes(cfg_file, tmp_path):
+    cfg = Config(cfg_file)
+    cfg.set_runtime("skip_unchanged", False)
+    service = Service(cfg)
+    service.client = mock.MagicMock()
+
+    room().save(tmp_path / "cam.jpg")
+    service.save_reference()
+    messy = room(clutter=40, seed=1)
+    messy.save(tmp_path / "cam.jpg")
+    service.check("interval")
+    with mock.patch.object(service.references, "analyze", wraps=service.references.analyze) as spy:
+        messy.save(tmp_path / "cam.jpg")
+        service.check("interval")
+        assert spy.call_count == 1, "ohne Überspringen wird immer neu bewertet"
+
+
 def test_photo_history_is_capped(cfg_file, tmp_path):
     cfg = Config(cfg_file)
     cfg.data["storage"]["max_photos"] = 3

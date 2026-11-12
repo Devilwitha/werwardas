@@ -28,6 +28,15 @@ analyzer: reference
 # Optional: Hinweise für die KI, z. B. "Der Wäschekorb in der Ecke ist erlaubt."
 prompt_hint: ""
 
+# Unveränderte Fotos nicht neu bewerten: sieht das Zimmer bei einer automatischen Intervall-Prüfung
+# fast genauso aus wie bei der letzten Bewertung, wird der alte Score übernommen statt die KI erneut
+# laufen zu lassen. Spart die meisten teuren Läufe. (In Home Assistant: Schalter "Unveränderte überspringen".)
+# Ein manuelles "Jetzt prüfen" und jede Einstellungsänderung bewerten immer neu.
+skip_unchanged: true
+# Höchstens so viel Anteil geänderter Kacheln (0..1) gilt noch als "unverändert". Kleiner = vorsichtiger
+# (öfter neu bewerten). Nutzt denselben Helligkeitsausgleich wie der Referenzvergleich (reference.sensitivity).
+unchanged_fraction: 0.03
+
 reference:
   sensitivity: 25     # höher = unempfindlicher
   gain: 5             # wie stark Veränderungen den Score senken

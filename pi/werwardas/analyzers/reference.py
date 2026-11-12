@@ -58,6 +58,16 @@ def changed_fraction(img: Image.Image, ref: Image.Image, sensitivity: float, mas
     return float(changed.sum()) / max(1, int(mask.sum()))
 
 
+def difference(img: Image.Image, other: Image.Image, sensitivity: float, ignore_areas: list | None = None) -> float:
+    """Anteil (0..1) der Kacheln, die sich zwischen zwei Fotos unterscheiden.
+
+    0 = praktisch identisch. Nutzt denselben Helligkeits-/Kontrastausgleich wie der
+    Referenzvergleich, damit reine Lichtänderungen kaum zählen. Damit lässt sich erkennen,
+    ob sich das Zimmer seit der letzten Bewertung überhaupt verändert hat.
+    """
+    return changed_fraction(img, other, sensitivity, _mask(ignore_areas))
+
+
 class ReferenceAnalyzer:
     name = "reference"
 

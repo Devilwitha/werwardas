@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import paho.mqtt.client as mqtt
 
 from . import __version__, analyzers
-from .analyzers.reference import ReferenceAnalyzer
+from .analyzers.reference import ReferenceAnalyzer, difference
 from .camera import Camera, CameraError, to_jpeg
 from .config import Config
 from .streak import StreakTracker
@@ -72,6 +72,11 @@ class Service:
         self.stop_event = threading.Event()
         self.next_run = time.monotonic() + 15  # erste Prüfung kurz nach dem Start
 
+        # Für "unveränderte Fotos überspringen": Foto und Ergebnis der letzten echten Bewertung.
+        self._last_eval_img = None
+        self._last_result: analyzers.Result | None = None
+        self._last_eval_name: str | None = None
+
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=self.node_id)
         if m.get("username"):
             self.client.username_pw_set(m["username"], m.get("password") or None)
@@ -127,6 +132,9 @@ class Service:
             elif topic == f"{self.base}/set/ollama_fallback":
                 self.cfg.set_runtime("ollama_fallback", payload.upper() == "ON")
                 self._publish_settings()
+            elif topic == f"{self.base}/set/skip_unchanged":
+                self.cfg.set_runtime("skip_unchanged", payload.upper() == "ON")
+                self._publish_settings()
             elif topic == f"{self.base}/set/active":
                 self.cfg.set_runtime("active", payload.upper() == "ON")
                 self._publish_settings()
@@ -143,6 +151,7 @@ class Service:
             "active": "ON" if c["active"] else "OFF",
             "active_hours": c["active_hours"] or "",
             "ollama_fallback": "ON" if c["ollama_fallback"] else "OFF",
+            "skip_unchanged": "ON" if c["skip_unchanged"] else "OFF",
             "references": len(self.references.references()),
         }
         self.client.publish(f"{self.base}/settings", json.dumps(settings), retain=True)
@@ -280,6 +289,14 @@ class Service:
                 "value_template": "{{ value_json.ollama_fallback }}",
                 "entity_category": "config",
             },
+            ("switch", "skip_unchanged"): {
+                "name": "Unveränderte überspringen",
+                "icon": "mdi:image-multiple",
+                "command_topic": f"{self.base}/set/skip_unchanged",
+                "state_topic": settings,
+                "value_template": "{{ value_json.skip_unchanged }}",
+                "entity_category": "config",
+            },
             ("switch", "active"): {
                 "name": "Überwachung",
                 "icon": "mdi:eye-check",
@@ -323,6 +340,34 @@ class Service:
         self.cleanup()
         return img
 
+    def _reuse_last(self, img, name: str, trigger: str):
+        """Letztes Ergebnis übernehmen, wenn das Zimmer seit der letzten Bewertung praktisch
+        unverändert ist – sonst None (dann wird neu bewertet).
+
+        Greift nur bei automatischen Intervall-Prüfungen: ein manuelles „Jetzt prüfen“ und jede
+        Einstellungsänderung bewerten absichtlich immer neu. Verglichen wird mit demselben
+        Analyzer, der zuletzt lief, damit kein fremder Score übernommen wird.
+        """
+        if not self.cfg["skip_unchanged"] or trigger != "interval":
+            return None
+        last = self._last_result
+        if last is None or last.score is None or self._last_eval_img is None or self._last_eval_name != name:
+            return None
+        try:
+            fraction = difference(
+                img,
+                self._last_eval_img,
+                float(self.cfg["reference"]["sensitivity"]),
+                self.cfg["reference"].get("ignore_areas"),
+            )
+        except Exception as exc:  # pragma: no cover - ein Vergleichsfehler darf die Prüfung nie stoppen
+            log.debug("Vergleich mit letztem Foto fehlgeschlagen: %s", exc)
+            return None
+        if fraction <= float(self.cfg["unchanged_fraction"]):
+            log.info("Zimmer unverändert (%.1f %% geändert) – Score %s übernommen", fraction * 100, last.score)
+            return analyzers.Result(last.score, last.reason, last.analyzer)
+        return None
+
     def check(self, trigger: str) -> dict:
         if not self.cfg["active"]:
             return self._publish_state(None, True, "Überwachung ist ausgeschaltet.", trigger, "paused")
@@ -334,11 +379,19 @@ class Service:
         self.client.publish(f"{self.base}/busy", "ON", retain=True)
         try:
             img = self._capture()
-            if name == "reference":
-                analyzer = self.references
-            else:
-                analyzer = analyzers.create(name, self.cfg.data, self.cfg.storage_dir)
-            result = analyzer.analyze(img)
+            result = self._reuse_last(img, name, trigger)
+            if result is None:
+                if name == "reference":
+                    analyzer = self.references
+                else:
+                    analyzer = analyzers.create(name, self.cfg.data, self.cfg.storage_dir)
+                result = analyzer.analyze(img)
+                # Nur gültige Bewertungen als Anker merken; der Anker bleibt beim Überspringen stehen,
+                # damit auch langsames "Zumüllen" über viele Intervalle irgendwann auffällt.
+                if result.score is not None:
+                    self._last_eval_img = img
+                    self._last_result = result
+                    self._last_eval_name = name
         except (CameraError, analyzers.AnalyzerError) as exc:
             log.error("%s", exc)
             # Bei Fehlern gilt das Zimmer als "unbekannt" -> der PC bleibt frei.
